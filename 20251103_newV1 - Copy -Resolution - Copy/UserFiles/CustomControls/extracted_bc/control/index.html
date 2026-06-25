@@ -7,6 +7,7 @@
   <script src='./webcc.min.js'></script> 
   <script src='./pdfkit.standalone.js'></script> 
   <script src='./blob-stream.js'></script> 
+  <script src='./svg-to-pdfkit.min.js'></script>
   
   <style>
       html, body {
@@ -52,7 +53,7 @@
         base64 += chars[uint8Array[i + 2] & 63];
       }
 
-      // Gestione del padding finale (=) se la lunghezza non è multiplo di 3
+      // Gestione del padding finale (=) se la lunghezza non ï¿½ multiplo di 3
       if (i === len - 2) {
         base64 += chars[uint8Array[i] >> 2];
         base64 += chars[((uint8Array[i] & 3) << 4) | (uint8Array[i + 1] >> 4)];
@@ -81,7 +82,7 @@
         base64 += chars[uint8Array[i + 2] & 63];
       }
 
-      // Gestione del padding finale (=) se la lunghezza non è multiplo di 3
+      // Gestione del padding finale (=) se la lunghezza non ï¿½ multiplo di 3
       if (i === len - 2) {
         base64 += chars[uint8Array[i] >> 2];
         base64 += chars[((uint8Array[i] & 3) << 4) | (uint8Array[i + 1] >> 4)];
@@ -211,11 +212,37 @@
       }
     }
 
+    function getSvgString(buf) {
+      if (typeof buf === 'string' && (buf.indexOf('<svg') !== -1 || buf.indexOf('<?xml') !== -1 || buf.indexOf('data:image/svg+xml') !== -1)) {
+        let svgString = buf;
+        if (buf.indexOf('data:image/svg+xml') !== -1) {
+          let commaIdx = buf.indexOf(',');
+          if (commaIdx !== -1) {
+            let dataPart = buf.substring(commaIdx + 1);
+            if (buf.indexOf('base64') !== -1) {
+              svgString = atob(dataPart);
+            } else {
+              svgString = decodeURIComponent(dataPart);
+            }
+          }
+        }
+        console.log("=== PDFKit RECEIVED SVG ===");
+        console.log(svgString);
+        return svgString;
+      }
+      return null;
+    }
+
     function embedImageAt(handle,buf,x,y) {
       if(enblDbg) dbglog("calling embedImageAt handle="+handle+" x="+x+" y="+y);
       try {
         let doc = docs[handle];
-        doc.image(buf,x,y);
+        let svgStr = getSvgString(buf);
+        if (svgStr) {
+          SVGtoPDF(doc, svgStr, x, y);
+        } else {
+          doc.image(buf,x,y);
+        }
       }
       catch(e) {
          dbglog("exception embedImageAt: "+e);
@@ -223,13 +250,44 @@
     }
 
     function embedImageAtToFit(handle,buf,x,y,w,alh,alv) {
-      if(enblDbg) dbglog("calling embedImageAt handle="+handle+" x="+x+" y="+y+" w="+w+" alh="+alh+" alv="+alv);
+      if(enblDbg) dbglog("calling embedImageAtToFit handle="+handle+" x="+x+" y="+y+" w="+w+" alh="+alh+" alv="+alv);
       try {
         let doc = docs[handle];
-        doc.image(buf,x,y,{width: w, align: alh, valign: alv});
+        let svgStr = getSvgString(buf);
+        if (svgStr) {
+          let options = {};
+          if (typeof w === 'number') {
+            options.width = w;
+          }
+          SVGtoPDF(doc, svgStr, x, y, options);
+        } else {
+          doc.image(buf,x,y,{width: w, align: alh, valign: alv});
+        }
       }
       catch(e) {
          dbglog("exception embedImageToFitAt: "+e);
+      }
+    }
+
+    function embedChartImage(handle,base64,x,y,w,h) {
+      if(enblDbg) dbglog("calling embedChartImage handle="+handle+" x="+x+" y="+y+" w="+w+" h="+h);
+      try {
+        let doc = docs[handle];
+        let svgStr = getSvgString(base64);
+        if (svgStr) {
+          let options = {};
+          if (typeof w === 'number') options.width = w;
+          if (typeof h === 'number') options.height = h;
+          SVGtoPDF(doc, svgStr, x, y, options);
+        } else {
+          let imgOpts = {};
+          if (typeof w === 'number') imgOpts.width = w;
+          if (typeof h === 'number') imgOpts.height = h;
+          doc.image(base64, x, y, imgOpts);
+        }
+      }
+      catch(e) {
+        dbglog("exception embedChartImage: "+e);
       }
     }
 
@@ -396,6 +454,9 @@
             case "EmbedImageAtToFit":
               embedImageAtToFit(handle, args.buffer,args.x,args.y,args.w,args.alh,args.alv);
               break;
+              case "EmbedChartImage":
+              embedChartImage(handle, args.base64, args.x, args.y, args.width, args.height);
+              break;
             case "SwitchToPage":
               switchToPage(handle, args.page);
               break;
@@ -481,6 +542,7 @@
             WriteTextAtWithFormat: function(args) { writeTextAtWithFormat(args.handle, args.text,args.x,args.y,args.w,args.al); },
             EmbedImageAt:          function(args) { embedImageAt(args.handle, args.buffer,args.x,args.y);  },
             EmbedImageAtToFit:     function(args) { embedImageAtToFit(args.handle, args.buffer,args.x,args.y,args.w,args.alh,args.alv);  },
+            EmbedChartImage:       function(args) { embedChartImage(args.handle, args.base64, args.x, args.y, args.width, args.height); },
             SwitchToPage:          function(args) { switchToPage(args.handle, args.page); },
             GetNumberOfPages:      function(args) { return getNumberOfPages(args.handle); },
             EndPDFAndBase64:       function(args) { return endPDFAndBase64(args.handle); },

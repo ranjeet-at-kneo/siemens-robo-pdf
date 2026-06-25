@@ -7,6 +7,52 @@
     <script src="./webcc.min.js"></script>
     <script src="./hammer.min.js"></script>
     <script src="./chart.min.js"></script>
+    <script src="./canvas2svg.min.js"></script>
+    <script>
+      // Polyfills for Chart.js compatibility with C2S (canvas2svg)
+      if (typeof C2S !== 'undefined') {
+        C2S.prototype.resetTransform = function() {};
+        C2S.prototype.setLineDash = function(segments) { this.lineDash = segments; };
+        C2S.prototype.getLineDash = function() { return this.lineDash || []; };
+        C2S.prototype.getContext = function(contextId) {
+            if (contextId === '2d' || contextId === '2D') {
+                return this;
+            }
+            return null;
+        };
+        C2S.prototype.addEventListener = function(type, listener, options) {};
+        C2S.prototype.removeEventListener = function(type, listener, options) {};
+        Object.defineProperty(C2S.prototype, 'style', {
+            get: function() { return this.__canvas ? this.__canvas.style : {}; }
+        });
+        C2S.prototype.getAttribute = function(name) {
+            return this[name] || (this.__canvas ? this.__canvas.getAttribute(name) : null);
+        };
+        C2S.prototype.setAttribute = function(name, value) {
+            this[name] = value;
+            if (this.__canvas) this.__canvas.setAttribute(name, value);
+        };
+        C2S.prototype.getBoundingClientRect = function() {
+            return {
+                left: 0,
+                top: 0,
+                right: this.width,
+                bottom: this.height,
+                width: this.width,
+                height: this.height
+            };
+        };
+        Object.defineProperty(C2S.prototype, 'tagName', {
+            get: function() { return "CANVAS"; }
+        });
+        Object.defineProperty(C2S.prototype, 'nodeName', {
+            get: function() { return "CANVAS"; }
+        });
+        Object.defineProperty(C2S.prototype, 'ownerDocument', {
+            get: function() { return this.__document || document; }
+        });
+      }
+    </script>
     <script src="./chartjs-plugin-zoom.min.js"></script>
 
     <style>
@@ -112,6 +158,7 @@ body {
       let datasets = [];
       let chart = null;
       let lastChartBase64 = "";
+      let lastChartSVG = "";
 
       let axisLabels = {
         start: { text: "", visible: false },
@@ -1300,7 +1347,101 @@ function getChartBase64() {
         console.error("getChartBase64 error:", err);
         throw err;
     }
-}    /* WebCC ****************************************************************/
+}  
+
+function getChartSVG() {
+    if (!chart) {
+        throw new Error("No chart rendered");
+    }
+
+    try {
+        const srcCanvas = chart.canvas;
+        const settings = getExportSettings();
+
+        let exportW = settings.width;
+        let exportH = settings.height;
+
+        // Apply orientation
+        if (settings.orientation === "portrait") {
+            if (exportW > exportH) {
+                [exportW, exportH] = [exportH, exportW];
+            }
+        }
+        else if (settings.orientation === "landscape") {
+            if (exportH > exportW) {
+                [exportW, exportH] = [exportH, exportW];
+            }
+        }
+        else {
+            // Auto: match chart canvas aspect
+            if (srcCanvas.width > srcCanvas.height) {
+                exportW = Math.max(settings.width, settings.height);
+                exportH = Math.min(settings.width, settings.height);
+            } else {
+                exportW = Math.min(settings.width, settings.height);
+                exportH = Math.max(settings.width, settings.height);
+            }
+        }
+
+        console.log(
+            `[Export SVG] size=${exportW}x${exportH}`
+        );
+
+        // Create the SVG context
+        const svgContext = new C2S(exportW, exportH);
+
+        const svgOptions = Object.assign({}, chart.options);
+        
+        svgOptions.animation = Object.assign({}, chart.options.animation || {});
+        svgOptions.animation.duration = 0;
+        
+        svgOptions.responsive = false;
+        svgOptions.maintainAspectRatio = false;
+        
+        if (svgOptions.plugins) {
+            svgOptions.plugins = Object.assign({}, svgOptions.plugins);
+            if (svgOptions.plugins.zoom) {
+                svgOptions.plugins.zoom = Object.assign({}, svgOptions.plugins.zoom);
+                svgOptions.plugins.zoom.zoom = { wheel: { enabled: false }, pinch: { enabled: false } };
+                svgOptions.plugins.zoom.pan = { enabled: false };
+            }
+        }
+
+        const svgConfig = {
+            type: jsonCfg.type,
+            data: chart.data, // use decimated visible data
+            options: svgOptions,
+            plugins: chart.config.plugins
+        };
+
+        // Instantiate a temporary chart on the C2S mock context
+        const tempChart = new Chart(svgContext, svgConfig);
+
+        // Destroy the temp chart to free memory
+        tempChart.destroy();
+
+        // Get serialized SVG XML string
+        const svgString = svgContext.getSerializedSvg(true);
+        
+        console.log("=== SVG XML ===");
+        console.log(svgString);
+
+        try {
+            const base64Svg = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgString)));
+            console.log("=== COPIABLE BASE64 SVG ===");
+            console.log(base64Svg);
+            console.log("===========================");
+        } catch (e) {
+            console.error("Failed to generate base64 SVG:", e);
+        }
+
+        return svgString;
+    }
+    catch (err) {
+        console.error("getChartSVG error:", err);
+        throw err;
+    }
+}   /* WebCC ****************************************************************/
 
       WebCC.start(
         function (result) {
@@ -1423,8 +1564,18 @@ function getChartBase64() {
                 dbglog("GetChartBase64 exception: " + e);
               }
             },
+            GetChartSVG: function () {
+              try {
+                let svgStr = getChartSVG();
+                lastChartSVG = svgStr;
+                dbglog("GetChartSVG length=" + svgStr.length);
+                WebCC.Events.fire("chartSVG", svgStr);
+              } catch (e) {
+                dbglog("GetChartSVG exception: " + e);
+              }
+            },
           },
-          events: ["trace", "chartBase64"],
+          events: ["trace", "chartBase64", "chartSVG"],
           properties: {
             TimeWindowMinutes: function (val) {
               timeWindowMs = val * 60 * 1000;
@@ -1441,6 +1592,12 @@ function getChartBase64() {
                 lastChartBase64 = val;
               }
               return lastChartBase64;
+            },
+            ChartSVGData: function (val) {
+              if (typeof val !== "undefined") {
+                lastChartSVG = val;
+              }
+              return lastChartSVG;
             },
           },
         },
