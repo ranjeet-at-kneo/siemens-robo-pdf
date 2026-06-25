@@ -195,6 +195,11 @@
    			 "parameters": {},
    			 "returns": "string"
 		},
+		"GetChartSVG": {
+    			"description": "Returns chart as SVG XML string",
+   			 "parameters": {},
+   			 "returns": "string"
+		},
                     "CheckTimeAxis": {
                         "description": "Aggiorna l'asse dei tempi.",
                         "parameters": {}
@@ -219,13 +224,20 @@
                             "data" : { "type" : "string" }
                         },
                         "description" : "Returns chart as Base64 JPEG image"
+                    },
+                    "chartSVG" : {
+                        "arguments" : {
+                            "data" : { "type" : "string" }
+                        },
+                        "description" : "Returns chart as SVG XML string"
                     }
                 },
                 "properties": {
                     "TimeWindowMinutes": { "type": "number", "default": 30 },
                     "TimeExtensionMinutes": { "type": "number", "default": 5 },
                     "EnableDebugLog": { "type": "boolean", "default": false },
-                    "ChartBase64Data": { "type": "string", "default": "" }
+                    "ChartBase64Data": { "type": "string", "default": "" },
+                    "ChartSVGData": { "type": "string", "default": "" }
                 }
             }
         },
