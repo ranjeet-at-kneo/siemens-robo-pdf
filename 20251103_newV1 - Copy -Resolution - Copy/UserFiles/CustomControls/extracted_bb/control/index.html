@@ -1423,6 +1423,18 @@ function getChartSVG() {
         // Get serialized SVG XML string
         const svgString = svgContext.getSerializedSvg(true);
 
+        console.log("=== SVG XML ===");
+        console.log(svgString);
+
+        try {
+            const base64Svg = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgString)));
+            console.log("=== COPIABLE BASE64 SVG ===");
+            console.log(base64Svg);
+            console.log("===========================");
+        } catch (e) {
+            console.error("Failed to generate base64 SVG:", e);
+        }
+
         return svgString;
     }
     catch (err) {
