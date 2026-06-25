@@ -1,0 +1,238 @@
+{
+    "mver": "1.2.23",
+    "$schema": "./CWC_manifest_Schema.json",
+    "control": {
+        "identity": {
+            "name": "PDFKit",
+            "version": "1.0.0", 
+            "displayname": "PDF by JS",
+            "icon": "./assets/ChartCamIcon.png",
+            "type": "guid://de936cae-fd78-445a-871f-e616946eb2bc",
+            "start": "./control/index.html"
+        },
+        "metadata": {
+            "author": "User",
+            "keywords": ["ChartJS", "Scripting"]
+        },
+        "contracts": {
+            "api": {
+                "methods": {
+                    "SetTraceMode": {
+                        "description": "Abilita o disabilita trace",
+                        "parameters": {
+                            "enable": { "type": "number", "description": "Abilitazione se diverso da zero" }
+                        }
+                    },
+                    "NewPDF": {
+                        "description": "Crea un nuovo PDF",
+                        "parameters": {
+                            "paper": { "type": "string", "description": "Formato A4 o LETTER" },
+                            "orientation": { "type": "string", "description": "Orientamento portrait o landscape" }
+                        },
+                        "returns": "Number"
+                    },
+                    "GetPageSize": {
+                        "description": "Ritorna la dimensione di una pagina",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" }
+                        },
+                        "returns": { "$ref": "Size2D" }
+                    },
+                    "GetTextSize": {
+                        "description": "Ritorna la dimensione di un testo",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "text": { "type": "string", "description": "Testo da misurare" },
+                            "w": { "type": "number", "description": "Larghezza massima" }
+                        },
+                        "returns": { "$ref": "Size2D" }
+                    },
+                    "SetFont": {
+                        "description": "Imposta il font",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "name": { "type": "string", "description": "Font Helvetica o Courier" }
+                        }
+                    },
+                    "SetFontSize": {
+                        "description": "Imposta la dimensione del font",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "size": { "type": "number", "description": "Dimensione font" }
+                        }
+                    },
+                    "WriteTextAt": {
+                        "description": "Inserisci testo in PDF",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "text": { "type": "string", "description": "Testo da inserire" },
+                            "x": { "type": "number", "description": "Coordinata x" },
+                            "y": { "type": "number", "description": "Coordinata y" }
+                        }
+                    },
+                    "WriteTextAtWithFormat": {
+                        "description": "Inserisci testo in PDF",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "text": { "type": "string", "description": "Testo da inserire" },
+                            "x": { "type": "number", "description": "Coordinata x" },
+                            "y": { "type": "number", "description": "Coordinata y" },
+                            "w": { "type": "number", "description": "Larghezza area scrittura" },
+                            "al": { "type": "string", "description": "Allineamento center, justify, right, left" }
+                        }
+                    },
+                    "EmbedImageAt": {
+                        "description": "Inserisci immagine in PDF",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "buffer": { "type": "string", "description": "Base64 string" },
+                            "x": { "type": "number", "description": "Coordinata x" },
+                            "y": { "type": "number", "description": "Coordinata y" }
+                        }
+                    },
+                    "EmbedImageAtToFit": {
+                        "description": "Inserisci immagine in PDF con vincoli di riscalatura",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "buffer": { "type": "string", "description": "Base64 string" },
+                            "x": { "type": "number", "description": "Coordinata x" },
+                            "y": { "type": "number", "description": "Coordinata y" },
+                            "w": { "type": "number", "description": "Larghezza massima" },
+                            "alh": { "type": "string", "description": "Allineamento orizzontale" },
+                            "alv": { "type": "string", "description": "Allineamento verticale" }
+                        }
+                    },
+                    "SwitchToPage": {
+                        "description": "Agisci su una pagina specifica",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "page": { "type": "number", "description": "Pagina su cui agire" }
+                        }
+                    },
+                    "GetNumberOfPages": {
+                        "description": "Ritorna il numero di pagine",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" }
+                        },
+                        "returns": "Number"
+                    },
+                    "EndPDFAndBase64": {
+                        "description": "Chiude il documento PDF e ritorna il contenuto come base 64",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" }
+                        },
+                        "returns": "Promise"
+                    },
+                    "AddPage": {
+                        "description": "Aggiunge una nuova pagina",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" }
+                        }
+                    },
+                    "RectStroke": {
+                        "description": "Rettangolo vuoto",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "x": { "type": "number", "description": "Coordinata x" },
+                            "y": { "type": "number", "description": "Coordinata y" },
+                            "w": { "type": "number", "description": "Larghezza" },
+                            "h": { "type": "number", "description": "Altezza" }
+                        }
+                    },
+                    "RectFill": {
+                        "description": "Rettangolo pieno",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "x": { "type": "number", "description": "Coordinata x" },
+                            "y": { "type": "number", "description": "Coordinata y" },
+                            "w": { "type": "number", "description": "Larghezza" },
+                            "h": { "type": "number", "description": "Altezza" }
+                        }
+                    },
+                    "RectFillAndStroke": {
+                        "description": "Rettangolo pieno e contornato",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "x": { "type": "number", "description": "Coordinata x" },
+                            "y": { "type": "number", "description": "Coordinata y" },
+                            "w": { "type": "number", "description": "Larghezza" },
+                            "h": { "type": "number", "description": "Altezza" }
+                        }
+                    },
+                    "Stroke": {
+                        "description": "Imposta colore tratto",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "color": { "type": "string", "description": "Colore" }
+                        }
+                    },
+                    "Fill": {
+                        "description": "Imposta colore riempimento",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "color": { "type": "string", "description": "Colore" }
+                        }
+                    },
+                    "DrawLine": {
+                        "description": "Disegna una linea",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "x1": { "type": "number", "description": "Coordinata x1" },
+                            "y1": { "type": "number", "description": "Coordinata y1" },
+                            "x2": { "type": "number", "description": "Coordinata x2" },
+                            "y2": { "type": "number", "description": "Coordinata y2" },
+                            "thickness": { "type": "number", "description": "Spessore" },
+                            "color": { "type": "string", "description": "Colore" }
+                        }
+                    },
+                    "Encode": {
+                        "description": "Codifica una stringa con un encoding e la ritorna in base64",
+                        "parameters": {
+                            "text": { "type": "string", "description": "Test da codificare" },
+                            "encoding": { "type": "string", "description": "Codifica" }
+                        },
+                        "returns": "string"
+                    },
+                    "BatchPDF": {
+                        "description": "Esegue un array di comandi PDF",
+                        "parameters": {
+                            "handle": { "type": "number", "description": "Handle documento" },
+                            "list": { "type": "Array", "description": "Array di oggetti che specificano la primitiva" }
+                        }
+                    },
+		"EmbedChartImage": {
+  				"description": "Embed chart image into PDF",
+  				"parameters": {
+    				"handle": { "type": "number" },
+    				"base64": { "type": "string" },
+    				"x": { "type": "number" },
+    				"y": { "type": "number" },
+    				"width": { "type": "number" },
+    				"height": { "type": "number" }
+  					}
+			}
+                },
+                "events": {
+                    "trace" : {
+                        "arguments" : {
+                            "text" : { "type" : "string" }
+                        },
+                        "description" : "Chiama HMITrace"
+                    }
+                },
+                "properties": {
+                    "EnableDebugLog": { "type": "boolean", "default": false }
+                }
+            }
+        },
+        "types": {
+            "Size2D" : {
+                "type": "object",
+                "properties": {
+                    "width": { "type": "number", "description": "larghezza" },
+                    "height": { "type": "number", "description": "altezza" }
+                }
+            }
+        }
+    }
+}
