@@ -229,10 +229,10 @@ body {
               display: true,
               labels: {
                 font: {
-                  size: 10,
+                  size: 20,
                 },
-                boxWidth: 10,
-                boxHeight: 5,
+                boxWidth: 14,
+                boxHeight: 8,
               },
             },
             tooltip: {
@@ -1223,78 +1223,300 @@ document.addEventListener("DOMContentLoaded", function() {
     logExportSettingsChange();
 });
 
+function escapeXml(value) {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+}
+
+function getChartSvgMarkup() {
+    if (!chart) {
+        throw new Error("No chart rendered");
+    }
+
+    const canvas = chart.canvas;
+    const width = Math.max(400, Math.round(canvas.width || 1000));
+    const height = Math.max(280, Math.round(canvas.height || 600));
+    const chartArea = chart.chartArea || {};
+    const left = chartArea.left || 44;
+    const top = chartArea.top || 0;
+    const right = chartArea.right || width - 24;
+    const bottom = chartArea.bottom || height - 24;
+    const plotTop = top;
+    const plotLeft = left;
+    const plotRight = right;
+    const plotBottom = bottom;
+
+    const body = [];
+    body.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`);
+    body.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff"/>`);
+
+    // 1. Draw Axes, Ticks, Tick Labels, Grid Lines dynamically from scales
+    if (chart.scales) {
+        const visibleYScaleIds = Object.keys(chart.scales).filter(id => id !== 'x' && chart.scales[id].options.display !== false);
+        const firstVisibleYScaleId = visibleYScaleIds.find(id => chart.scales[id].position === 'left') || visibleYScaleIds[0];
+
+        Object.keys(chart.scales).forEach((scaleId) => {
+            const scale = chart.scales[scaleId];
+            if (!scale || scale.options.display === false) return;
+
+            const isHorizontal = scale.isHorizontal();
+
+            if (isHorizontal) {
+                // Draw horizontal scale line
+                const yPos = scale.bottom;
+                body.push(`<line x1="${plotLeft}" y1="${yPos}" x2="${plotRight}" y2="${yPos}" stroke="#666666" stroke-width="1"/>`);
+
+                if (scale.ticks) {
+                    scale.ticks.forEach((tick, index) => {
+                        const xPx = scale.getPixelForValue(tick.value);
+                        if (xPx >= plotLeft - 0.5 && xPx <= plotRight + 0.5) {
+                            // Vertical grid line (skip borders to avoid overlap)
+                            if (xPx > plotLeft + 1 && xPx < plotRight - 1) {
+                                body.push(`<line x1="${xPx.toFixed(2)}" y1="${plotTop}" x2="${xPx.toFixed(2)}" y2="${plotBottom}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="2,2"/>`);
+                            }
+                            // Tick mark line
+                            body.push(`<line x1="${xPx.toFixed(2)}" y1="${yPos}" x2="${xPx.toFixed(2)}" y2="${yPos + 4}" stroke="#666666" stroke-width="1"/>`);
+                            // Tick text
+                            const label = tick.label || scale.getLabelForValue(tick.value);
+                            if (label) {
+                                body.push(`<text x="${xPx.toFixed(2)}" y="${yPos + 24}" font-family="Arial, sans-serif" font-size="22" fill="#4b5563" text-anchor="middle">${escapeXml(label)}</text>`);
+                            }
+                        }
+                    });
+                }
+
+                // Axis Title (Horizontal scale)
+                if (scale.options.title && scale.options.title.display && scale.options.title.text) {
+                    const titleText = scale.options.title.text;
+                    const titleColor = scale.options.title.color || "#666666";
+                    const titleFontSize = Math.max(28, (scale.options.title.font?.size || 12) + 14);
+                    const isBold = scale.options.title.font?.weight === "bold";
+                    // Position below tick labels and custom labels
+                    const titleY = Math.round(scale.bottom + (axisLabels.start.visible || axisLabels.end.visible ? 74 : 50));
+                    const titleX = Math.round((plotLeft + plotRight) / 2);
+                    body.push(`<text x="${titleX}" y="${titleY}" font-family="Arial, sans-serif" font-size="${titleFontSize}" font-weight="${isBold ? 'bold' : 'normal'}" fill="${titleColor}" text-anchor="middle">${escapeXml(titleText)}</text>`);
+                }
+            } else {
+                // Vertical Y scale
+                const isLeft = scale.position === "left";
+                const xPos = isLeft ? scale.right : scale.left;
+
+                // Draw vertical scale line
+                body.push(`<line x1="${xPos}" y1="${plotTop}" x2="${xPos}" y2="${plotBottom}" stroke="#666666" stroke-width="1"/>`);
+
+                if (scale.ticks) {
+                    scale.ticks.forEach((tick, index) => {
+                        const yPx = scale.getPixelForValue(tick.value);
+                        if (yPx >= plotTop - 0.5 && yPx <= plotBottom + 0.5) {
+                            // Horizontal grid line (only draw for the primary Y scale to avoid duplicate overlapping grids)
+                            if (scaleId === firstVisibleYScaleId && scale.options.grid && scale.options.grid.display !== false) {
+                                if (yPx > plotTop + 1 && yPx < plotBottom - 1) {
+                                    const gridColor = scale.options.grid.color || "#e5e7eb";
+                                    body.push(`<line x1="${plotLeft}" y1="${yPx.toFixed(2)}" x2="${plotRight}" y2="${yPx.toFixed(2)}" stroke="${gridColor}" stroke-width="1"/>`);
+                                }
+                            }
+                            // Tick mark line
+                            const xTickEnd = isLeft ? xPos - 4 : xPos + 4;
+                            body.push(`<line x1="${xPos}" y1="${yPx.toFixed(2)}" x2="${xTickEnd}" y2="${yPx.toFixed(2)}" stroke="#666666" stroke-width="1"/>`);
+                            // Tick text
+                            const label = tick.label || scale.getLabelForValue(tick.value);
+                            if (label) {
+                                const textX = isLeft ? xPos - 14 : xPos + 14;
+                                const anchor = isLeft ? "end" : "start";
+                                body.push(`<text x="${textX}" y="${(yPx + 7.5).toFixed(2)}" font-family="Arial, sans-serif" font-size="22" fill="#4b5563" text-anchor="${anchor}">${escapeXml(label)}</text>`);
+                            }
+                        }
+                    });
+                }
+
+                // Axis Title (Vertical Y scale)
+                if (scale.options.title && scale.options.title.display && scale.options.title.text) {
+                    const titleText = scale.options.title.text;
+                    const titleColor = scale.options.title.color || "#666666";
+                    const titleFontSize = Math.max(28, (scale.options.title.font?.size || 12) + 14);
+                    const isBold = scale.options.title.font?.weight === "bold";
+                    const titleX = isLeft 
+                        ? Math.max(10, Math.round(scale.left + titleFontSize / 2)) 
+                        : Math.min(width - 10, Math.round(scale.right - titleFontSize / 2));
+                    const titleY = Math.round((plotTop + plotBottom) / 2);
+                    const rotation = isLeft ? -90 : 90;
+                    body.push(`<text x="0" y="0" font-family="Arial, sans-serif" font-size="${titleFontSize}" font-weight="${isBold ? 'bold' : 'normal'}" fill="${titleColor}" text-anchor="middle" transform="translate(${titleX}, ${titleY}) rotate(${rotation})">${escapeXml(titleText)}</text>`);
+                }
+            }
+        });
+    }
+
+    // 2. Draw Events (matching eventDrawerPlugin logic)
+    if (Array.isArray(eventsList)) {
+        const xScale = chart.scales && chart.scales.x;
+        const minTime = xScale ? xScale.min : 0;
+        const maxTime = xScale ? xScale.max : currentLogicalMaxMs;
+
+        eventsList.forEach((ev) => {
+            if ((ev.type & eventsMask) === 0) return;
+            if (ev.time < minTime || ev.time > maxTime) return;
+
+            const xPos = xScale ? xScale.getPixelForValue(ev.time) : null;
+            if (Number.isFinite(xPos) && xPos >= plotLeft && xPos <= plotRight) {
+                const color = eventColors[ev.type] || "black";
+                // Vertical line
+                body.push(`<line x1="${xPos.toFixed(2)}" y1="${plotTop}" x2="${xPos.toFixed(2)}" y2="${plotBottom}" stroke="${color}" stroke-width="1"/>`);
+                // Rotated event text
+                const textY = plotTop + 10;
+                body.push(`<text x="${xPos.toFixed(2)}" y="${textY}" font-family="Arial, sans-serif" font-size="10" fill="${color}" transform="rotate(90, ${xPos.toFixed(2)}, ${textY})">${escapeXml(ev.text)}</text>`);
+            }
+        });
+    }
+
+    // 3. Draw Legend (datasets labels)
+    const datasets = Array.isArray(chart.data && chart.data.datasets) ? chart.data.datasets : [];
+    const legendItems = [];
+
+    if (chart.legend && Array.isArray(chart.legend.legendItems) && chart.legend.legendItems.length > 0) {
+        chart.legend.legendItems.forEach((item) => {
+            legendItems.push({
+                text: item.text || "",
+                color: item.strokeStyle || item.fillStyle || item.backgroundColor || "#3b82f6",
+                lineWidth: item.lineWidth || 2,
+                hidden: !!item.hidden,
+            });
+        });
+    } else {
+        datasets.forEach((dataset) => {
+            if (!dataset) return;
+            legendItems.push({
+                text: dataset.label || "Series",
+                color: dataset.borderColor || dataset.pointBorderColor || "#3b82f6",
+                lineWidth: dataset.borderWidth || 2,
+                hidden: false,
+            });
+        });
+    }
+
+    if (legendItems.length > 0) {
+        const legendBox = chart.legend && Number.isFinite(chart.legend.left) && Number.isFinite(chart.legend.top)
+            ? {
+                left: chart.legend.left,
+                top: chart.legend.top,
+            }
+            : null;
+        const legendLineLength = 34;
+        const configFontSize = chart.options.plugins.legend?.labels?.font?.size || 20;
+        const legendFontSize = Math.max(configFontSize + 2, Math.round(Math.min(width, height) * 0.025));
+        const rowGap = Math.max(20, Math.round(legendFontSize * 1.25));
+        const maxLegendWidth = Math.max(220, Math.round(width * 0.65));
+        const legendY = legendBox
+            ? Math.max(12, Math.round(legendBox.top))
+            : Math.max(20, Math.round(plotTop - 20));
+        const legendCenterX = Math.round(width / 2);
+        const legendX = legendBox
+            ? Math.max(24, Math.round(legendCenterX - maxLegendWidth / 2))
+            : Math.max(24, Math.round(width * 0.08));
+        let cursorX = legendX;
+        let cursorY = legendY;
+
+        legendItems.forEach((item) => {
+            if (!item.text) return;
+            const swatchColor = item.hidden ? "#cccccc" : item.color;
+            const label = escapeXml(item.text);
+            const itemWidth = legendLineLength + 10 + label.length * (legendFontSize * 0.6);
+            if (cursorX + itemWidth > legendX + maxLegendWidth && cursorX > legendX) {
+                cursorX = legendX;
+                cursorY += rowGap;
+            }
+            body.push(`<line x1="${cursorX}" y1="${cursorY + 8}" x2="${cursorX + legendLineLength}" y2="${cursorY + 8}" stroke="${swatchColor}" stroke-width="${Math.max(2, item.lineWidth || 2)}" stroke-linecap="round"/>`);
+            body.push(`<text x="${cursorX + legendLineLength + 10}" y="${cursorY + 12}" font-family="Arial, sans-serif" font-size="${legendFontSize}" fill="#333333">${label}</text>`);
+            cursorX += itemWidth + 12;
+        });
+    }
+
+    // 4. Draw Custom Axis Labels (shifted slightly lower to avoid tick overlaps)
+    if (axisLabels.start.visible) {
+        body.push(`<text x="${left}" y="${bottom + 44}" font-family="Arial, sans-serif" font-size="22" fill="#333333">${escapeXml(axisLabels.start.text)}</text>`);
+    }
+
+    if (axisLabels.end.visible) {
+        body.push(`<text x="${right}" y="${bottom + 44}" text-anchor="end" font-family="Arial, sans-serif" font-size="22" fill="#333333">${escapeXml(axisLabels.end.text)}</text>`);
+    }
+
+    // 5. Draw Polyline Data Points
+    datasets.forEach((dataset) => {
+        if (!dataset || !Array.isArray(dataset.data) || dataset.data.length < 2) return;
+
+        const points = [];
+        dataset.data.forEach((point, pointIndex) => {
+            let xValue = null;
+            let yValue = null;
+
+            if (Array.isArray(point)) {
+                xValue = point[0];
+                yValue = point[1];
+            } else if (point && typeof point === "object") {
+                xValue = point.x ?? point.t ?? point[0];
+                yValue = point.y ?? point.v ?? point[1];
+            } else {
+                xValue = pointIndex;
+                yValue = point;
+            }
+
+            if (xValue === null || yValue === null || typeof xValue === "undefined" || typeof yValue === "undefined") {
+                return;
+            }
+
+            const xScale = chart.scales && chart.scales.x;
+            const yAxisId = dataset.yAxisID || "y";
+            const scaleForY = chart.scales && chart.scales[yAxisId] ? chart.scales[yAxisId] : null;
+
+            if (!xScale || !scaleForY) {
+                return;
+            }
+
+            let xPx = xScale.getPixelForValue(xValue);
+            let yPx = scaleForY.getPixelForValue(yValue);
+
+            if (!Number.isFinite(xPx) || !Number.isFinite(yPx)) {
+                return;
+            }
+
+            xPx = Math.max(plotLeft, Math.min(plotRight, xPx));
+            yPx = Math.max(plotTop, Math.min(plotBottom, yPx));
+            points.push(`${xPx.toFixed(2)},${yPx.toFixed(2)}`);
+        });
+
+        if (points.length >= 2) {
+            const strokeColor = dataset.borderColor || dataset.pointBorderColor || "#3b82f6";
+            const strokeWidth = dataset.borderWidth || 2;
+            body.push(`<polyline fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" points="${points.join(" ")}"/>`);
+        }
+    });
+
+    body.push("</svg>");
+    return body.join("");
+}
+
+function getChartSvgDataUrl() {
+    const svgMarkup = getChartSvgMarkup();
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgMarkup);
+}
+
 function getChartBase64() {
     if (!chart) {
         throw new Error("No chart rendered");
     }
 
     try {
-        const srcCanvas = chart.canvas;
         const settings = getExportSettings();
-
-        let exportW = settings.width;
-        let exportH = settings.height;
-
-        // Apply orientation
-        if (settings.orientation === "portrait") {
-            if (exportW > exportH) {
-                [exportW, exportH] = [exportH, exportW];
-            }
-        }
-        else if (settings.orientation === "landscape") {
-            if (exportH > exportW) {
-                [exportW, exportH] = [exportH, exportW];
-            }
-        }
-        else {
-            // Auto: match chart canvas aspect
-            if (srcCanvas.width > srcCanvas.height) {
-                exportW = Math.max(settings.width, settings.height);
-                exportH = Math.min(settings.width, settings.height);
-            } else {
-                exportW = Math.min(settings.width, settings.height);
-                exportH = Math.max(settings.width, settings.height);
-            }
-        }
+        const svgDataUrl = getChartSvgDataUrl();
 
         console.log(
-            `[Export] paper=${settings.paper} orientation=${settings.orientation} size=${exportW}x${exportH}`
+            `[Export] paper=${settings.paper} orientation=${settings.orientation} svg length=${svgDataUrl.length}`
         );
 
-        const exportCanvas = document.createElement("canvas");
-        exportCanvas.width = exportW;
-        exportCanvas.height = exportH;
-
-        const ctx = exportCanvas.getContext("2d");
-
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(0, 0, exportW, exportH);
-
-        ctx.imageSmoothingEnabled = true;
-
-        if ("imageSmoothingQuality" in ctx) {
-            ctx.imageSmoothingQuality = "high";
-        }
-
-        ctx.drawImage(
-            srcCanvas,
-            0,
-            0,
-            srcCanvas.width,
-            srcCanvas.height,
-            0,
-            0,
-            exportW,
-            exportH
-        );
-
-        const base64 = exportCanvas.toDataURL("image/png");
-
-        console.log(
-            `[Export] Generated PNG ${exportCanvas.width}x${exportCanvas.height}, base64 length=${base64.length}`
-        );
-
-        return base64;
+        return svgDataUrl;
     }
     catch (err) {
         console.error("getChartBase64 error:", err);
