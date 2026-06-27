@@ -221,7 +221,8 @@ function getChartSvgMarkup() {
         body.push(`<text x="${right}" y="${bottom + 44}" text-anchor="end" font-family="Arial, sans-serif" font-size="22" fill="#333333">${escapeXml(axisLabels.end.text)}</text>`);
     }
 
-    // 5. Draw Data (Bars or Polylines)
+    // 5. Draw Data (Bars first, then Polylines on top)
+    // Pass A: Draw all Bar datasets
     datasets.forEach((dataset, datasetIndex) => {
         if (!dataset || !Array.isArray(dataset.data)) return;
 
@@ -242,13 +243,35 @@ function getChartSvgMarkup() {
                 const rectX = x - rectWidth / 2;
                 const rectY = Math.min(y, base);
 
-                const fill = element.options?.backgroundColor || dataset.backgroundColor || "#3b82f6";
-                const stroke = element.options?.borderColor || dataset.borderColor || "none";
-                const strokeWidth = element.options?.borderWidth || dataset.borderWidth || 0;
+                // Clamp horizontally to chart area (plotLeft, plotRight)
+                let drawX = rectX;
+                let drawW = rectWidth;
+                if (drawX < plotLeft) {
+                    drawW -= (plotLeft - drawX);
+                    drawX = plotLeft;
+                }
+                if (drawX + drawW > plotRight) {
+                    drawW = plotRight - drawX;
+                }
 
-                body.push(`<rect x="${rectX.toFixed(2)}" y="${rectY.toFixed(2)}" width="${rectWidth.toFixed(2)}" height="${rectHeight.toFixed(2)}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"/>`);
+                if (drawW > 0) {
+                    const fill = element.options?.backgroundColor || dataset.backgroundColor || "#3b82f6";
+                    const stroke = element.options?.borderColor || dataset.borderColor || "none";
+                    const strokeWidth = element.options?.borderWidth || dataset.borderWidth || 0;
+
+                    body.push(`<rect x="${drawX.toFixed(2)}" y="${rectY.toFixed(2)}" width="${drawW.toFixed(2)}" height="${rectHeight.toFixed(2)}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"/>`);
+                }
             });
-            return;
+        }
+    });
+
+    // Pass B: Draw all Line (Polyline) datasets on top of bars
+    datasets.forEach((dataset, datasetIndex) => {
+        if (!dataset || !Array.isArray(dataset.data)) return;
+
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (meta && meta.type === 'bar') {
+            return; // Already drawn in Pass A
         }
 
         // Default: Draw Polyline Data Points for line charts
