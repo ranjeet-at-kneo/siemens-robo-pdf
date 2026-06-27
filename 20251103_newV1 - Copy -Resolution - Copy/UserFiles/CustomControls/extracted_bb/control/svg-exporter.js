@@ -225,6 +225,9 @@ function getChartSvgMarkup() {
     // Pass A: Draw all Bar datasets
     datasets.forEach((dataset, datasetIndex) => {
         if (!dataset || !Array.isArray(dataset.data)) return;
+        if (chart && typeof chart.isDatasetVisible === "function" && !chart.isDatasetVisible(datasetIndex)) {
+            return;
+        }
 
         const meta = chart.getDatasetMeta(datasetIndex);
         if (meta && meta.type === 'bar') {
@@ -268,6 +271,9 @@ function getChartSvgMarkup() {
     // Pass B: Draw all Line (Polyline) datasets on top of bars
     datasets.forEach((dataset, datasetIndex) => {
         if (!dataset || !Array.isArray(dataset.data)) return;
+        if (chart && typeof chart.isDatasetVisible === "function" && !chart.isDatasetVisible(datasetIndex)) {
+            return;
+        }
 
         const meta = chart.getDatasetMeta(datasetIndex);
         if (meta && meta.type === 'bar') {
