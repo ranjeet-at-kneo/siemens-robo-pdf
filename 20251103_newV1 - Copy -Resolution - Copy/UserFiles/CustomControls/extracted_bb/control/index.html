@@ -1443,10 +1443,38 @@ function getChartSvgMarkup() {
         body.push(`<text x="${right}" y="${bottom + 44}" text-anchor="end" font-family="Arial, sans-serif" font-size="22" fill="#333333">${escapeXml(axisLabels.end.text)}</text>`);
     }
 
-    // 5. Draw Polyline Data Points
-    datasets.forEach((dataset) => {
-        if (!dataset || !Array.isArray(dataset.data) || dataset.data.length < 2) return;
+    // 5. Draw Data (Bars or Polylines)
+    datasets.forEach((dataset, datasetIndex) => {
+        if (!dataset || !Array.isArray(dataset.data)) return;
 
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (meta && meta.type === 'bar') {
+            const metaData = meta.data || [];
+            metaData.forEach((element) => {
+                if (!element) return;
+                
+                // Get bar dimensions
+                const x = element.x;
+                const y = element.y;
+                const base = element.base ?? y;
+                const width = element.width ?? 10;
+                
+                const rectWidth = width;
+                const rectHeight = Math.abs(y - base);
+                const rectX = x - rectWidth / 2;
+                const rectY = Math.min(y, base);
+
+                const fill = element.options?.backgroundColor || dataset.backgroundColor || "#3b82f6";
+                const stroke = element.options?.borderColor || dataset.borderColor || "none";
+                const strokeWidth = element.options?.borderWidth || dataset.borderWidth || 0;
+
+                body.push(`<rect x="${rectX.toFixed(2)}" y="${rectY.toFixed(2)}" width="${rectWidth.toFixed(2)}" height="${rectHeight.toFixed(2)}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"/>`);
+            });
+            return;
+        }
+
+        // Default: Draw Polyline Data Points for line charts
+        if (dataset.data.length < 2) return;
         const points = [];
         dataset.data.forEach((point, pointIndex) => {
             let xValue = null;
