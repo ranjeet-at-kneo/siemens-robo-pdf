@@ -32,8 +32,8 @@ body {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px;
-  padding: 12px 20px;
+  gap: 12px;
+  padding: 4px 12px;
   background: var(--bg-color);
   border-bottom: 1px solid var(--border-color);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -42,8 +42,9 @@ body {
 
 .control-group {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
 }
 
 .control-group label {
@@ -56,13 +57,13 @@ body {
 
 .control-group select,
 .control-group input {
-  height: 32px;
-  padding: 0 12px;
-  font-size: 13px;
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
   color: var(--text-dark);
   background-color: var(--input-bg);
   border: 1px solid var(--input-border);
-  border-radius: 6px;
+  border-radius: 4px;
   outline: none;
   transition: all 0.2s ease-in-out;
   font-family: inherit;
@@ -70,12 +71,12 @@ body {
 
 .control-group select {
   cursor: pointer;
-  padding-right: 28px;
+  padding-right: 20px;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 12px;
+  background-position: right 6px center;
+  background-size: 10px;
 }
 
 .control-group select:hover,
@@ -94,9 +95,9 @@ body {
   background-color: var(--badge-bg);
   color: var(--badge-text);
   border: 1px solid var(--badge-border);
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 10px;
   font-weight: 600;
   font-family: 'Consolas', 'Courier New', monospace;
   letter-spacing: 0.02em;
@@ -108,7 +109,7 @@ body {
   position: relative;
   width: 100%;
   background-color: #ffffff;
-  padding: 12px;
+  padding: 8px;
   box-sizing: border-box;
 }
 
@@ -119,8 +120,8 @@ body {
 
 .separator {
   width: 1px;
-  height: 32px;
+  height: 18px;
   background-color: var(--border-color);
-  align-self: flex-end;
-  margin: 0 8px 0 8px;
+  align-self: center;
+  margin: 0 4px;
 }
