@@ -29,29 +29,6 @@ function getChartSvgMarkup() {
     body.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`);
     body.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff"/>`);
 
-    // Draw Phase Shading Background Bands (behind axes & grids)
-    if (typeof phases !== "undefined" && Array.isArray(phases)) {
-        phases.forEach((phase) => {
-            const xScale = chart.scales && chart.scales.x;
-            if (!xScale) return;
-            const xStart = xScale.getPixelForValue(phase.start);
-            const xEnd = xScale.getPixelForValue(phase.end);
-            const leftPx = Math.max(plotLeft, Math.min(plotRight, xStart));
-            const rightPx = Math.max(plotLeft, Math.min(plotRight, xEnd));
-            const w = rightPx - leftPx;
-
-            if (w > 0) {
-                // Fill rect
-                body.push(`<rect x="${leftPx.toFixed(2)}" y="${plotTop.toFixed(2)}" width="${w.toFixed(2)}" height="${(plotBottom - plotTop).toFixed(2)}" fill="${phase.color || 'rgba(0,0,0,0.05)'}"/>`);
-                // Border separator
-                body.push(`<line x1="${rightPx.toFixed(2)}" y1="${plotTop.toFixed(2)}" x2="${rightPx.toFixed(2)}" y2="${plotBottom.toFixed(2)}" stroke="rgba(0,0,0,0.15)" stroke-width="1"/>`);
-                // Label text
-                const textX = leftPx + w / 2;
-                body.push(`<text x="${textX.toFixed(2)}" y="${(plotTop + 24).toFixed(2)}" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#64748b" text-anchor="middle">${escapeXml(phase.label)}</text>`);
-            }
-        });
-    }
-
     // 1. Draw Axes, Ticks, Tick Labels, Grid Lines dynamically from scales
     if (chart.scales) {
         const visibleYScaleIds = Object.keys(chart.scales).filter(id => id !== 'x' && chart.scales[id].options.display !== false);
