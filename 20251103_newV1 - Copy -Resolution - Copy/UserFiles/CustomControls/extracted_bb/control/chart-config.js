@@ -192,6 +192,7 @@ var jsonCfg = {
         },
       },
       tooltip: {
+        enabled: false,
         callbacks: {
           title: function (tooltipItems) {
             if (!tooltipItems.length) return "";

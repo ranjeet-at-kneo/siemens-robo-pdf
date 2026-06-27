@@ -817,7 +817,17 @@ function initCrosshair() {
 
         if (closestPt) {
           let valY = closestPt.y ?? closestPt.v ?? closestPt[1];
-          let unit = dataset.yAxisID === "y2" || dataset.yAxisID === "bar" ? " bar" : " °C";
+          const scaleId = dataset.yAxisID || "y";
+          const scale = chart.scales && chart.scales[scaleId];
+          let unit = " °C";
+          if (scale && scale.options && scale.options.title && scale.options.title.text) {
+            const titleText = String(scale.options.title.text).toLowerCase();
+            if (titleText.includes("bar") || titleText.includes("pressure") || titleText.includes("pres")) {
+              unit = " bar";
+            }
+          } else if (scaleId.toLowerCase().includes("bar")) {
+            unit = " bar";
+          }
           if (valY !== undefined && valY !== null) {
             rowsHtml += `
               <div class="crosshair-val-row">
