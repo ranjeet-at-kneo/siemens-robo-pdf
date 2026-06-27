@@ -359,6 +359,11 @@ function datasetClear() {
 // this is called from the outside to force chart update
 function updateChart(none) {
   if (enblDbg) dbglog("UpdateChart start, whith none=" + none);
+  
+  if (typeof applyCurrentChartMode === "function") {
+    applyCurrentChartMode();
+  }
+  
   updateDecimation(); // ricalcola i punti prima di disegnare
   try {
     if (none) {

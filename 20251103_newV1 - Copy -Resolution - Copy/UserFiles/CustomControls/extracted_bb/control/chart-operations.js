@@ -378,3 +378,67 @@ function applyYLimits() {
     dbglog("applyYLimits exception: " + e);
   }
 }
+
+// dynamic chart type switching (line, bar, mixed)
+function applyCurrentChartMode() {
+  if (!chart) return;
+  const mode = currentChartMode || "line";
+  
+  try {
+    // Set root configuration type
+    if (mode === "bar") {
+      chart.config.type = "bar";
+      jsonCfg.type = "bar";
+    } else {
+      chart.config.type = "line";
+      jsonCfg.type = "line";
+    }
+
+    // Set individual dataset types
+    const currentDatasets = chart.data.datasets || [];
+    currentDatasets.forEach((dataset, index) => {
+      if (mode === "line") {
+        dataset.type = "line";
+      } else if (mode === "bar") {
+        dataset.type = "bar";
+      } else if (mode === "mixed") {
+        // Alternating: Even dataset index = line, Odd dataset index = bar
+        dataset.type = (index % 2 === 0) ? "line" : "bar";
+      }
+    });
+  } catch (e) {
+    dbglog("applyCurrentChartMode exception: " + e);
+  }
+}
+
+function changeChartType(mode) {
+  if (enblDbg) dbglog("changeChartType called with mode=" + mode);
+  currentChartMode = mode;
+  applyCurrentChartMode();
+  
+  try {
+    // Redraw the chart
+    if (typeof updateChart !== "undefined") {
+      updateChart();
+    } else {
+      chart.update();
+    }
+    if (enblDbg) dbglog("changeChartType complete, type is " + chart.config.type);
+  } catch (e) {
+    dbglog("changeChartType exception: " + e);
+  }
+}
+
+// Bind dropdown change event listener
+document.addEventListener("DOMContentLoaded", function () {
+  const selectEl = document.getElementById("chartType");
+  if (selectEl) {
+    selectEl.addEventListener("change", function (e) {
+      changeChartType(e.target.value);
+    });
+    selectEl.addEventListener("input", function (e) {
+      changeChartType(e.target.value);
+    });
+  }
+});
+

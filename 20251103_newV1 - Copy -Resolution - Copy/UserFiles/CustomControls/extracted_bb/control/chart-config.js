@@ -10,6 +10,7 @@ let traces = [];
 let datasets = [];
 let chart = null;
 let lastChartBase64 = "";
+let currentChartMode = "line";
 
 let axisLabels = {
   start: { text: "", visible: false },
