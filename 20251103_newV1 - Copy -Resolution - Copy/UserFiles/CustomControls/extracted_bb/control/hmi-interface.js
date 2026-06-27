@@ -26,6 +26,7 @@ WebCC.start(
       console.log("ChartJS Connected (v5)");
       try {
         Chart.defaults.devicePixelRatio = 1;
+        Chart.defaults.font.family = "'Siemens Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif";
         chart = new Chart("myChart", jsonCfg);
       } catch (e) {
         console.error("Errore init Chart", e);

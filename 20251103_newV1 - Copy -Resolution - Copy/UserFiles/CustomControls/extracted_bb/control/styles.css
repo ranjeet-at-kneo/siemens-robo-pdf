@@ -1,4 +1,126 @@
-/* Add your CSS styles in this file. */
+:root {
+  --siemens-blue: #005c8a;
+  --siemens-blue-hover: #004b70;
+  --bg-color: #f8fafc;
+  --border-color: #e2e8f0;
+  --text-dark: #1e293b;
+  --text-muted: #64748b;
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --badge-bg: #e0f2fe;
+  --badge-text: #0369a1;
+  --badge-border: #bae6fd;
+}
+
+html,
 body {
-  font-family: 'Siemens Sans', Hevletica, 'sans-serif';
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  font-family: 'Siemens Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #ffffff;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+#controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--bg-color);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.control-group label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.control-group select,
+.control-group input {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--text-dark);
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+  font-family: inherit;
+}
+
+.control-group select {
+  cursor: pointer;
+  padding-right: 28px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+}
+
+.control-group select:hover,
+.control-group input:hover {
+  border-color: var(--siemens-blue);
+}
+
+.control-group select:focus,
+.control-group input:focus {
+  border-color: var(--siemens-blue);
+  box-shadow: 0 0 0 3px rgba(0, 92, 138, 0.15);
+}
+
+#settingsInfo {
+  margin-left: auto;
+  background-color: var(--badge-bg);
+  color: var(--badge-text);
+  border: 1px solid var(--badge-border);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Consolas', 'Courier New', monospace;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+#myChartDiv {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  background-color: #ffffff;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+#myChart {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.separator {
+  width: 1px;
+  height: 32px;
+  background-color: var(--border-color);
+  align-self: flex-end;
+  margin: 0 8px 0 8px;
 }
