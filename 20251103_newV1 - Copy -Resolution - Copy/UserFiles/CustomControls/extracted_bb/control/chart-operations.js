@@ -406,8 +406,12 @@ function applyCurrentChartMode() {
       } else if (mode === "bar") {
         dataset.type = "bar";
       } else if (mode === "mixed") {
-        // Alternating: Even dataset index = line, Odd dataset index = bar
-        dataset.type = (index % 2 === 0) ? "line" : "bar";
+        // Determine type based on the stable master trace index rather than current visible index
+        const masterIndex = (typeof traces !== "undefined" && Array.isArray(traces)) 
+            ? traces.indexOf(dataset) 
+            : index;
+        const targetIndex = (masterIndex !== -1) ? masterIndex : index;
+        dataset.type = (targetIndex % 2 === 0) ? "line" : "bar";
       }
     });
   } catch (e) {
