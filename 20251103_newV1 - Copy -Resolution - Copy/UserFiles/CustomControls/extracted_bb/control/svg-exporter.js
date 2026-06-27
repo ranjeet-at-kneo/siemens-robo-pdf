@@ -115,8 +115,8 @@ function getChartSvgMarkup() {
                     const titleFontSize = Math.max(28, (scale.options.title.font?.size || 12) + 14);
                     const isBold = scale.options.title.font?.weight === "bold";
                     const titleX = isLeft 
-                        ? Math.max(10, Math.round(scale.left + titleFontSize / 2)) 
-                        : Math.min(width - 10, Math.round(scale.right - titleFontSize / 2));
+                        ? Math.max(10 + titleFontSize / 2, Math.round(scale.left - 25)) 
+                        : Math.min(width - 10 - titleFontSize / 2, Math.round(scale.right + 25));
                     const titleY = Math.round((plotTop + plotBottom) / 2);
                     const rotation = isLeft ? -90 : 90;
                     body.push(`<text x="0" y="0" font-family="Arial, sans-serif" font-size="${titleFontSize}" font-weight="${isBold ? 'bold' : 'normal'}" fill="${titleColor}" text-anchor="middle" transform="translate(${titleX}, ${titleY}) rotate(${rotation})">${escapeXml(titleText)}</text>`);
@@ -198,13 +198,16 @@ function getChartSvgMarkup() {
             if (!item.text) return;
             const swatchColor = item.hidden ? "#cccccc" : item.color;
             const label = escapeXml(item.text);
-            const itemWidth = legendLineLength + 10 + label.length * (legendFontSize * 0.6);
+            const rectW = 20;
+            const rectH = 12;
+            const rectY = cursorY + 2;
+            const itemWidth = rectW + 8 + label.length * (legendFontSize * 0.6);
             if (cursorX + itemWidth > legendX + maxLegendWidth && cursorX > legendX) {
                 cursorX = legendX;
                 cursorY += rowGap;
             }
-            body.push(`<line x1="${cursorX}" y1="${cursorY + 8}" x2="${cursorX + legendLineLength}" y2="${cursorY + 8}" stroke="${swatchColor}" stroke-width="${Math.max(2, item.lineWidth || 2)}" stroke-linecap="round"/>`);
-            body.push(`<text x="${cursorX + legendLineLength + 10}" y="${cursorY + 12}" font-family="Arial, sans-serif" font-size="${legendFontSize}" fill="#333333">${label}</text>`);
+            body.push(`<rect x="${cursorX}" y="${rectY}" width="${rectW}" height="${rectH}" fill="${swatchColor}" stroke="none"/>`);
+            body.push(`<text x="${cursorX + rectW + 8}" y="${cursorY + 12}" font-family="Arial, sans-serif" font-size="${legendFontSize}" fill="#333333">${label}</text>`);
             cursorX += itemWidth + 12;
         });
     }

@@ -58,6 +58,22 @@ function checkAndTimeAxisUpdate() {
 }
 
 // Decimazione Forzata ad hoc
+function binarySearchX(data, targetX, strict) {
+  let low = 0;
+  let high = data.length - 1;
+  while (low <= high) {
+    let mid = (low + high) >> 1;
+    const val = data[mid].x;
+    if (strict ? val > targetX : val >= targetX) {
+      high = mid - 1;
+    } else {
+      low = mid + 1;
+    }
+  }
+  return low;
+}
+
+// Decimazione Forzata ad hoc
 function updateDecimation() {
   try {
     if (!chart) return;
@@ -72,21 +88,9 @@ function updateDecimation() {
       let sourceData = chartDataset._fullData;
       if (!sourceData || sourceData.length === 0) return;
 
-      let startIndex = 0;
-      let endIndex = sourceData.length;
+      let startIndex = binarySearchX(sourceData, viewMin, false);
+      let endIndex = binarySearchX(sourceData, viewMax, true);
 
-      for (let k = 0; k < sourceData.length; k++) {
-        if (sourceData[k].x >= viewMin) {
-          startIndex = k;
-          break;
-        }
-      }
-      for (let k = startIndex; k < sourceData.length; k++) {
-        if (sourceData[k].x > viewMax) {
-          endIndex = k;
-          break;
-        }
-      }
       if (startIndex > 0) startIndex--;
       if (endIndex < sourceData.length) endIndex++;
 
@@ -529,6 +533,8 @@ function initBrushEvents() {
   const canvas = document.getElementById("brushCanvas");
   if (!canvas) return;
 
+  let animationFrameId = null;
+
   const getMouseX = (e) => {
     const rect = canvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -597,7 +603,6 @@ function initBrushEvents() {
     if (!chart) return;
     const mouseX = getMouseX(e);
     const width = canvas.getBoundingClientRect().width;
-    const ratio = mouseX / width;
     const maxT = currentLogicalMaxMs || (30 * 60 * 1000);
 
     let chartMin = chart.options.scales.x.min;
@@ -620,44 +625,51 @@ function initBrushEvents() {
       return;
     }
 
-    // Dragging active
-    if (dragStartType === "left-handle") {
-      let newMin = ratio * maxT;
-      newMin = Math.max(0, Math.min(chartMax - 1000, newMin)); // limit min x (at least 1s width)
-      chart.options.scales.x.min = newMin;
-      isManuallyZoomed = true;
-    } else if (dragStartType === "right-handle") {
-      let newMax = ratio * maxT;
-      newMax = Math.min(maxT, Math.max(chartMin + 1000, newMax)); // limit max x (at least 1s width)
-      chart.options.scales.x.max = newMax;
-      isManuallyZoomed = true;
-    } else if (dragStartType === "pan") {
-      const deltaX = mouseX - dragStartX;
-      const deltaMs = (deltaX / width) * maxT;
-      let newMin = dragStartMin + deltaMs;
-      let newMax = dragStartMax + deltaMs;
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+    }
 
-      // Bound viewport check
-      if (newMin < 0) {
-        newMax -= newMin;
-        newMin = 0;
-      } else if (newMax > maxT) {
-        newMin -= (newMax - maxT);
-        newMax = maxT;
+    animationFrameId = requestAnimationFrame(() => {
+      const ratio = mouseX / width;
+      // Dragging active
+      if (dragStartType === "left-handle") {
+        let newMin = ratio * maxT;
+        newMin = Math.max(0, Math.min(chartMax - 1000, newMin)); // limit min x (at least 1s width)
+        chart.options.scales.x.min = newMin;
+        isManuallyZoomed = true;
+      } else if (dragStartType === "right-handle") {
+        let newMax = ratio * maxT;
+        newMax = Math.min(maxT, Math.max(chartMin + 1000, newMax)); // limit max x (at least 1s width)
+        chart.options.scales.x.max = newMax;
+        isManuallyZoomed = true;
+      } else if (dragStartType === "pan") {
+        const deltaX = mouseX - dragStartX;
+        const deltaMs = (deltaX / width) * maxT;
+        let newMin = dragStartMin + deltaMs;
+        let newMax = dragStartMax + deltaMs;
+
+        // Bound viewport check
+        if (newMin < 0) {
+          newMax -= newMin;
+          newMin = 0;
+        } else if (newMax > maxT) {
+          newMin -= (newMax - maxT);
+          newMax = maxT;
+        }
+
+        chart.options.scales.x.min = newMin;
+        chart.options.scales.x.max = newMax;
+        isManuallyZoomed = true;
       }
 
-      chart.options.scales.x.min = newMin;
-      chart.options.scales.x.max = newMax;
-      isManuallyZoomed = true;
-    }
-
-    // Fast draw update
-    if (typeof updateChart !== "undefined") {
-      updateChart("none"); // suppresses full decimation calculation during smooth dragging
-    } else {
-      chart.update("none");
-    }
-    drawBrush();
+      // Fast draw update
+      if (typeof updateChart !== "undefined") {
+        updateChart("none"); // suppresses full decimation calculation during smooth dragging
+      } else {
+        chart.update("none");
+      }
+      drawBrush();
+    });
   };
 
   const handleEnd = () => {
