@@ -429,7 +429,265 @@ function changeChartType(mode) {
   }
 }
 
-// Bind dropdown change event listener
+// -------------------------------------------------------------
+// Timeline Range Brush Implementation
+// -------------------------------------------------------------
+var isDraggingBrush = false;
+var dragStartType = ""; // 'pan', 'left-handle', 'right-handle'
+var dragStartX = 0;
+var dragStartMin = 0;
+var dragStartMax = 0;
+
+function drawBrush() {
+  try {
+    const canvas = document.getElementById("brushCanvas");
+    if (!canvas || !chart) return;
+
+    // Adjust canvas resolution dynamically to match client size
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+
+    const width = rect.width;
+    const height = rect.height;
+
+    // Get current scale limits
+    let chartMin = chart.options.scales.x.min;
+    let chartMax = chart.options.scales.x.max;
+    let maxT = currentLogicalMaxMs || (30 * 60 * 1000);
+
+    if (chartMin === undefined || chartMin === null) chartMin = 0;
+    if (chartMax === undefined || chartMax === null) chartMax = maxT;
+
+    // Ratios
+    const rMin = Math.max(0, Math.min(1.0, chartMin / maxT));
+    const rMax = Math.max(0, Math.min(1.0, chartMax / maxT));
+
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+
+    // 1. Draw Background Track (light gray rounded bar)
+    const trackHeight = 8;
+    const trackY = (height - trackHeight) / 2;
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(0, trackY, width, trackHeight, 4);
+    } else {
+      ctx.rect(0, trackY, width, trackHeight);
+    }
+    ctx.fillStyle = "#e2e8f0";
+    ctx.fill();
+
+    // 2. Draw Highlighted Viewport Region (translucent Siemens blue)
+    const leftPx = rMin * width;
+    const rightPx = rMax * width;
+    const highlightW = rightPx - leftPx;
+
+    ctx.beginPath();
+    ctx.rect(leftPx, trackY, highlightW, trackHeight);
+    ctx.fillStyle = "rgba(0, 92, 138, 0.2)";
+    ctx.fill();
+    ctx.strokeStyle = "#005c8a";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // 3. Draw Handles (Siemens blue pill style shapes at edges)
+    const handleW = 6;
+    const handleH = 16;
+    const handleY = (height - handleH) / 2;
+
+    // Left Handle
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(leftPx - handleW / 2, handleY, handleW, handleH, 2);
+    } else {
+      ctx.rect(leftPx - handleW / 2, handleY, handleW, handleH);
+    }
+    ctx.fillStyle = "#005c8a";
+    ctx.fill();
+
+    // Right Handle
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(rightPx - handleW / 2, handleY, handleW, handleH, 2);
+    } else {
+      ctx.rect(rightPx - handleW / 2, handleY, handleW, handleH);
+    }
+    ctx.fillStyle = "#005c8a";
+    ctx.fill();
+
+  } catch (e) {
+    console.error("drawBrush error:", e);
+  }
+}
+
+function initBrushEvents() {
+  const canvas = document.getElementById("brushCanvas");
+  if (!canvas) return;
+
+  const getMouseX = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    return clientX - rect.left;
+  };
+
+  const handleStart = (e) => {
+    if (!chart) return;
+    const mouseX = getMouseX(e);
+    const width = canvas.getBoundingClientRect().width;
+    const ratio = mouseX / width;
+
+    let chartMin = chart.options.scales.x.min;
+    let chartMax = chart.options.scales.x.max;
+    const maxT = currentLogicalMaxMs || (30 * 60 * 1000);
+
+    if (chartMin === undefined || chartMin === null) chartMin = 0;
+    if (chartMax === undefined || chartMax === null) chartMax = maxT;
+
+    const leftPx = (chartMin / maxT) * width;
+    const rightPx = (chartMax / maxT) * width;
+
+    const handleTolerance = 8; // Click area tolerance around handles
+
+    if (Math.abs(mouseX - leftPx) <= handleTolerance) {
+      isDraggingBrush = true;
+      dragStartType = "left-handle";
+    } else if (Math.abs(mouseX - rightPx) <= handleTolerance) {
+      isDraggingBrush = true;
+      dragStartType = "right-handle";
+    } else if (mouseX >= leftPx && mouseX <= rightPx) {
+      isDraggingBrush = true;
+      dragStartType = "pan";
+      dragStartX = mouseX;
+      dragStartMin = chartMin;
+      dragStartMax = chartMax;
+    } else {
+      // Clicked outside: snap viewport center to click position
+      const range = chartMax - chartMin;
+      const clickedTime = ratio * maxT;
+      let newMin = clickedTime - range / 2;
+      let newMax = clickedTime + range / 2;
+
+      if (newMin < 0) {
+        newMax = range;
+        newMin = 0;
+      } else if (newMax > maxT) {
+        newMin = maxT - range;
+        newMax = maxT;
+      }
+
+      chart.options.scales.x.min = newMin;
+      chart.options.scales.x.max = newMax;
+      isManuallyZoomed = true;
+      
+      if (typeof updateChart !== "undefined") {
+        updateChart();
+      } else {
+        chart.update();
+      }
+      drawBrush();
+    }
+  };
+
+  const handleMove = (e) => {
+    if (!chart) return;
+    const mouseX = getMouseX(e);
+    const width = canvas.getBoundingClientRect().width;
+    const ratio = mouseX / width;
+    const maxT = currentLogicalMaxMs || (30 * 60 * 1000);
+
+    let chartMin = chart.options.scales.x.min;
+    let chartMax = chart.options.scales.x.max;
+    if (chartMin === undefined || chartMin === null) chartMin = 0;
+    if (chartMax === undefined || chartMax === null) chartMax = maxT;
+
+    const leftPx = (chartMin / maxT) * width;
+    const rightPx = (chartMax / maxT) * width;
+
+    // Toggle cursor styles
+    if (!isDraggingBrush) {
+      if (Math.abs(mouseX - leftPx) <= 8 || Math.abs(mouseX - rightPx) <= 8) {
+        canvas.style.cursor = "col-resize";
+      } else if (mouseX >= leftPx && mouseX <= rightPx) {
+        canvas.style.cursor = "grab";
+      } else {
+        canvas.style.cursor = "pointer";
+      }
+      return;
+    }
+
+    // Dragging active
+    if (dragStartType === "left-handle") {
+      let newMin = ratio * maxT;
+      newMin = Math.max(0, Math.min(chartMax - 1000, newMin)); // limit min x (at least 1s width)
+      chart.options.scales.x.min = newMin;
+      isManuallyZoomed = true;
+    } else if (dragStartType === "right-handle") {
+      let newMax = ratio * maxT;
+      newMax = Math.min(maxT, Math.max(chartMin + 1000, newMax)); // limit max x (at least 1s width)
+      chart.options.scales.x.max = newMax;
+      isManuallyZoomed = true;
+    } else if (dragStartType === "pan") {
+      const deltaX = mouseX - dragStartX;
+      const deltaMs = (deltaX / width) * maxT;
+      let newMin = dragStartMin + deltaMs;
+      let newMax = dragStartMax + deltaMs;
+
+      // Bound viewport check
+      if (newMin < 0) {
+        newMax -= newMin;
+        newMin = 0;
+      } else if (newMax > maxT) {
+        newMin -= (newMax - maxT);
+        newMax = maxT;
+      }
+
+      chart.options.scales.x.min = newMin;
+      chart.options.scales.x.max = newMax;
+      isManuallyZoomed = true;
+    }
+
+    // Fast draw update
+    if (typeof updateChart !== "undefined") {
+      updateChart("none"); // suppresses full decimation calculation during smooth dragging
+    } else {
+      chart.update("none");
+    }
+    drawBrush();
+  };
+
+  const handleEnd = () => {
+    if (isDraggingBrush) {
+      isDraggingBrush = false;
+      // Do a clean update to rebuild decimation on final dragged boundaries
+      if (typeof updateChart !== "undefined") {
+        updateChart();
+      } else {
+        chart.update();
+      }
+      drawBrush();
+    }
+  };
+
+  // Mouse Listeners
+  canvas.addEventListener("mousedown", handleStart);
+  window.addEventListener("mousemove", handleMove);
+  window.addEventListener("mouseup", handleEnd);
+
+  // Touch Support
+  canvas.addEventListener("touchstart", handleStart, { passive: true });
+  window.addEventListener("touchmove", handleMove, { passive: true });
+  window.addEventListener("touchend", handleEnd);
+}
+
+// Global hook to draw brush on window resize or redraws
+window.addEventListener("resize", drawBrush);
+
+// Bind event listeners on DOM Load
 document.addEventListener("DOMContentLoaded", function () {
   const selectEl = document.getElementById("chartType");
   if (selectEl) {
@@ -440,5 +698,7 @@ document.addEventListener("DOMContentLoaded", function () {
       changeChartType(e.target.value);
     });
   }
+  
+  initBrushEvents();
 });
 

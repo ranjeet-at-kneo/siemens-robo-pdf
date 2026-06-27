@@ -28,6 +28,9 @@ WebCC.start(
         Chart.defaults.devicePixelRatio = 1;
         Chart.defaults.font.family = "'Siemens Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif";
         chart = new Chart("myChart", jsonCfg);
+        if (typeof drawBrush === "function") {
+          drawBrush();
+        }
       } catch (e) {
         console.error("Errore init Chart", e);
         dbglog("WebCC chart.js init exception " + e);

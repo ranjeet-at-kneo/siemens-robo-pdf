@@ -371,6 +371,11 @@ function updateChart(none) {
     } else {
       chart.update();
     }
+    
+    if (typeof drawBrush === "function") {
+      drawBrush();
+    }
+    
     if (enblDbg) dbglog("UpdateChart done");
   } catch (e) {
     dbglog("updateChart exception: " + e);
