@@ -406,9 +406,9 @@ function applyCurrentChartMode() {
       } else if (mode === "bar") {
         dataset.type = "bar";
       } else if (mode === "mixed") {
-        // Determine type based on the stable master trace index rather than current visible index
+        // Determine type based on the stable master trace index matching by label
         const masterIndex = (typeof traces !== "undefined" && Array.isArray(traces)) 
-            ? traces.indexOf(dataset) 
+            ? traces.findIndex(t => t.label === dataset.label) 
             : index;
         const targetIndex = (masterIndex !== -1) ? masterIndex : index;
         dataset.type = (targetIndex % 2 === 0) ? "line" : "bar";
