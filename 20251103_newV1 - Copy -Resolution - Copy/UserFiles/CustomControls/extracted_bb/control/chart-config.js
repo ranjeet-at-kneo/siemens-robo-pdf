@@ -11,6 +11,8 @@ let datasets = [];
 let chart = null;
 let lastChartBase64 = "";
 let currentChartMode = "line";
+let phases = [];
+let crosshairX = null;
 
 let axisLabels = {
   start: { text: "", visible: false },
@@ -99,6 +101,69 @@ const eventDrawerPlugin = {
 
     ctx.restore();
   },
+};
+
+const phaseShadingPlugin = {
+  id: "phaseShading",
+  beforeDraw(chart) {
+    if (typeof phases === "undefined" || !phases || phases.length === 0) return;
+    const ctx = chart.ctx;
+    const chartArea = chart.chartArea;
+    const xScale = chart.scales.x;
+    if (!xScale) return;
+
+    ctx.save();
+    phases.forEach((phase) => {
+      const xStart = xScale.getPixelForValue(phase.start);
+      const xEnd = xScale.getPixelForValue(phase.end);
+      const leftPx = Math.max(chartArea.left, Math.min(chartArea.right, xStart));
+      const rightPx = Math.max(chartArea.left, Math.min(chartArea.right, xEnd));
+      const width = rightPx - leftPx;
+
+      if (width > 0) {
+        // Fill background
+        ctx.fillStyle = phase.color || "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(leftPx, chartArea.top, width, chartArea.bottom - chartArea.top);
+
+        // Draw vertical phase border
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(rightPx, chartArea.top);
+        ctx.lineTo(rightPx, chartArea.bottom);
+        ctx.stroke();
+
+        // Draw phase label text centered at the top
+        ctx.fillStyle = "#64748b";
+        ctx.font = "bold 11px Arial, sans-serif";
+        ctx.textBaseline = "top";
+        ctx.textAlign = "center";
+        ctx.fillText(phase.label || "", leftPx + width / 2, chartArea.top + 6);
+      }
+    });
+    ctx.restore();
+  }
+};
+
+const crosshairLinePlugin = {
+  id: "crosshairLine",
+  afterDatasetsDraw(chart) {
+    if (typeof crosshairX !== "undefined" && crosshairX !== null) {
+      const ctx = chart.ctx;
+      const chartArea = chart.chartArea;
+      if (!chartArea) return;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(crosshairX, chartArea.top);
+      ctx.lineTo(crosshairX, chartArea.bottom);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "#475569";
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
 };
 
 /* chart definition *****************************************************/
@@ -190,5 +255,5 @@ var jsonCfg = {
       },
     },
   },
-  plugins: [eventDrawerPlugin, axisLabelPlugin],
+  plugins: [eventDrawerPlugin, axisLabelPlugin, phaseShadingPlugin, crosshairLinePlugin],
 };

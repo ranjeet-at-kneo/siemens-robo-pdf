@@ -129,6 +129,16 @@ WebCC.start(
       CheckTimeAxis: function () {
         checkAndTimeAxisUpdate();
       },
+      PhaseAdd: function (args) {
+        if (typeof phaseAdd === "function") {
+          phaseAdd(args.start, args.end, args.text, args.colorRGB);
+        }
+      },
+      PhasesClear: function () {
+        if (typeof phasesClear === "function") {
+          phasesClear();
+        }
+      },
       GetExportSettings: function () {
         return getExportSettings();
       },

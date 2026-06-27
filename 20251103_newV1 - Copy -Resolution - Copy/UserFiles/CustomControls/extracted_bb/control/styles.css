@@ -143,3 +143,53 @@ body {
   display: block;
   cursor: pointer;
 }
+
+#crosshairPanel {
+  position: absolute;
+  top: 12px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: 'Siemens Sans', Arial, sans-serif;
+  font-size: 12px;
+  pointer-events: none;
+  display: none;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  z-index: 10;
+  min-width: 150px;
+}
+
+#crosshairTime {
+  font-weight: bold;
+  margin-bottom: 6px;
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 4px;
+}
+
+.crosshair-val-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.crosshair-color-box {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.crosshair-label {
+  font-weight: 500;
+  color: #475569;
+}
+
+.crosshair-value {
+  font-weight: bold;
+  color: #0f172a;
+  margin-left: auto;
+}
