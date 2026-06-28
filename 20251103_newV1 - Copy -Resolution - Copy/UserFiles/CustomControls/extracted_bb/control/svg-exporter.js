@@ -73,7 +73,7 @@ function getChartSvgMarkup() {
               const label = tick.label || scale.getLabelForValue(tick.value);
               if (label) {
                 body.push(
-                  `<text x="${xPx.toFixed(2)}" y="${yPos + 24}" font-family="Arial, sans-serif" font-size="22" fill="#4b5563" text-anchor="middle">${escapeXml(label)}</text>`,
+                  `<text x="${xPx.toFixed(2)}" y="${yPos + 18}" font-family="Arial, sans-serif" font-size="14" fill="#4b5563" text-anchor="middle">${escapeXml(label)}</text>`,
                 );
               }
             }
@@ -89,14 +89,14 @@ function getChartSvgMarkup() {
           const titleText = scale.options.title.text;
           const titleColor = scale.options.title.color || "#666666";
           const titleFontSize = Math.max(
-            28,
-            (scale.options.title.font?.size || 12) + 14,
+            16,
+            (scale.options.title.font?.size || 12) + 4,
           );
           const isBold = scale.options.title.font?.weight === "bold";
           // Position below tick labels and custom labels
           const titleY = Math.round(
             scale.bottom +
-              (axisLabels.start.visible || axisLabels.end.visible ? 74 : 50),
+              (axisLabels.start.visible || axisLabels.end.visible ? 50 : 36),
           );
           const titleX = Math.round((plotLeft + plotRight) / 2);
           body.push(
@@ -138,10 +138,10 @@ function getChartSvgMarkup() {
               // Tick text
               const label = tick.label || scale.getLabelForValue(tick.value);
               if (label) {
-                const textX = isLeft ? xPos - 14 : xPos + 14;
+                const textX = isLeft ? xPos - 10 : xPos + 10;
                 const anchor = isLeft ? "end" : "start";
                 body.push(
-                  `<text x="${textX}" y="${(yPx + 7.5).toFixed(2)}" font-family="Arial, sans-serif" font-size="22" fill="#4b5563" text-anchor="${anchor}">${escapeXml(label)}</text>`,
+                  `<text x="${textX}" y="${(yPx + 5.5).toFixed(2)}" font-family="Arial, sans-serif" font-size="14" fill="#4b5563" text-anchor="${anchor}">${escapeXml(label)}</text>`,
                 );
               }
             }
@@ -157,13 +157,14 @@ function getChartSvgMarkup() {
           const titleText = scale.options.title.text;
           const titleColor = scale.options.title.color || "#666666";
           const titleFontSize = Math.max(
-            28,
-            (scale.options.title.font?.size || 12) + 14,
+            16,
+            (scale.options.title.font?.size || 12) + 4,
           );
           const isBold = scale.options.title.font?.weight === "bold";
+          // Use safe layout margins relative to axis line xPos
           const titleX = isLeft
-            ? Math.max(10, Math.round(scale.left + titleFontSize / 2))
-            : Math.min(width - 10, Math.round(scale.right - titleFontSize / 2));
+            ? Math.max(10 + titleFontSize / 2, Math.round(xPos - 45))
+            : Math.min(width - 10 - titleFontSize / 2, Math.round(xPos + 45));
           const titleY = Math.round((plotTop + plotBottom) / 2);
           const rotation = isLeft ? -90 : 90;
           body.push(
@@ -247,16 +248,13 @@ function getChartSvgMarkup() {
         : null;
     const legendLineLength = 34;
     const configFontSize =
-      chart.options.plugins.legend?.labels?.font?.size || 20;
-    const legendFontSize = Math.max(
-      configFontSize + 2,
-      Math.round(Math.min(width, height) * 0.025),
-    );
-    const rowGap = Math.max(20, Math.round(legendFontSize * 1.25));
+      chart.options.plugins.legend?.labels?.font?.size || 12;
+    const legendFontSize = Math.max(configFontSize + 2, 14);
+    const rowGap = Math.max(18, Math.round(legendFontSize * 1.25));
     const maxLegendWidth = Math.max(220, Math.round(width * 0.65));
     const legendY = legendBox
-      ? Math.max(12, Math.round(legendBox.top))
-      : Math.max(20, Math.round(plotTop - 20));
+      ? Math.max(10, Math.round(legendBox.top))
+      : Math.max(15, Math.round(plotTop - 18));
     const legendCenterX = Math.round(width / 2);
     const legendX = legendBox
       ? Math.max(24, Math.round(legendCenterX - maxLegendWidth / 2))
@@ -289,13 +287,13 @@ function getChartSvgMarkup() {
   // 4. Draw Custom Axis Labels (shifted slightly lower to avoid tick overlaps)
   if (axisLabels.start.visible) {
     body.push(
-      `<text x="${left}" y="${bottom + 44}" font-family="Arial, sans-serif" font-size="22" fill="#333333">${escapeXml(axisLabels.start.text)}</text>`,
+      `<text x="${left}" y="${bottom + 36}" font-family="Arial, sans-serif" font-size="14" fill="#333333">${escapeXml(axisLabels.start.text)}</text>`,
     );
   }
 
   if (axisLabels.end.visible) {
     body.push(
-      `<text x="${right}" y="${bottom + 44}" text-anchor="end" font-family="Arial, sans-serif" font-size="22" fill="#333333">${escapeXml(axisLabels.end.text)}</text>`,
+      `<text x="${right}" y="${bottom + 36}" text-anchor="end" font-family="Arial, sans-serif" font-size="14" fill="#333333">${escapeXml(axisLabels.end.text)}</text>`,
     );
   }
 
