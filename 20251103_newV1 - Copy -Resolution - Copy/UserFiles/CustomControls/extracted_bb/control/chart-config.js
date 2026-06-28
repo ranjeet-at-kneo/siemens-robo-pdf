@@ -146,13 +146,23 @@ var jsonCfg = {
       },
       zoom: {
         pan: {
-          enabled: false,
-          mode: "xy",
+          enabled: true,
+          mode: "x",
+          onPan: function () {
+            if (typeof drawBrush === "function") {
+              drawBrush();
+            }
+          },
         },
         zoom: {
-          wheel: { enabled: false },
-          pinch: { enabled: false },
-          mode: "xy",
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          mode: "x",
+          onZoom: function () {
+            if (typeof drawBrush === "function") {
+              drawBrush();
+            }
+          },
         },
       },
       decimation: {

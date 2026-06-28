@@ -464,12 +464,13 @@ function drawBrush() {
     const height = rect.height;
 
     // Get current scale limits
-    let chartMin = chart.options.scales.x.min;
-    let chartMax = chart.options.scales.x.max;
+    let chartMin = (chart.options.scales && chart.options.scales.x && chart.options.scales.x.min !== undefined && chart.options.scales.x.min !== null)
+      ? chart.options.scales.x.min 
+      : (chart.scales && chart.scales.x ? chart.scales.x.min : 0);
+    let chartMax = (chart.options.scales && chart.options.scales.x && chart.options.scales.x.max !== undefined && chart.options.scales.x.max !== null)
+      ? chart.options.scales.x.max 
+      : (chart.scales && chart.scales.x ? chart.scales.x.max : (currentLogicalMaxMs || 30 * 60 * 1000));
     let maxT = currentLogicalMaxMs || (30 * 60 * 1000);
-
-    if (chartMin === undefined || chartMin === null) chartMin = 0;
-    if (chartMax === undefined || chartMax === null) chartMax = maxT;
 
     // Ratios
     const rMin = Math.max(0, Math.min(1.0, chartMin / maxT));
