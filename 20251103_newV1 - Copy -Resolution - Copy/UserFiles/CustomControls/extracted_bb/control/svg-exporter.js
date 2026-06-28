@@ -389,8 +389,27 @@ function getChartBase64() {
     }
 }
 
+function handleOrientationChange() {
+    const val = document.getElementById("orientation")?.value;
+    const wInput = document.getElementById("exportWidth");
+    const hInput = document.getElementById("exportHeight");
+    if (val === "portrait") {
+        if (wInput) wInput.value = "900";
+        if (hInput) hInput.value = "500";
+    } else if (val === "landscape") {
+        if (wInput) wInput.value = "1200";
+        if (hInput) hInput.value = "600";
+    }
+}
+
 // Attach change listeners to update the info bar
 document.addEventListener("DOMContentLoaded", function() {
+    const orientEl = document.getElementById("orientation");
+    if (orientEl) {
+        orientEl.addEventListener("change", handleOrientationChange);
+        orientEl.addEventListener("input", handleOrientationChange);
+    }
+
     ["paperSize", "orientation", "exportWidth", "exportHeight"].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) el.addEventListener("change", logExportSettingsChange);
