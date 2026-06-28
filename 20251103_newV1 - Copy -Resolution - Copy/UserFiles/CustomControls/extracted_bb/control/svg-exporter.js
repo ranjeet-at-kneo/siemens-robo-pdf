@@ -115,8 +115,8 @@ function getChartSvgMarkup() {
                     const titleFontSize = Math.max(28, (scale.options.title.font?.size || 12) + 14);
                     const isBold = scale.options.title.font?.weight === "bold";
                     const titleX = isLeft 
-                        ? Math.max(10 + titleFontSize / 2, Math.round(scale.left - 25)) 
-                        : Math.min(width - 10 - titleFontSize / 2, Math.round(scale.right + 25));
+                        ? Math.max(15 + titleFontSize / 2, Math.round(xPos - 65)) 
+                        : Math.min(width - 15 - titleFontSize / 2, Math.round(xPos + 65));
                     const titleY = Math.round((plotTop + plotBottom) / 2);
                     const rotation = isLeft ? -90 : 90;
                     body.push(`<text x="0" y="0" font-family="Arial, sans-serif" font-size="${titleFontSize}" font-weight="${isBold ? 'bold' : 'normal'}" fill="${titleColor}" text-anchor="middle" transform="translate(${titleX}, ${titleY}) rotate(${rotation})">${escapeXml(titleText)}</text>`);
